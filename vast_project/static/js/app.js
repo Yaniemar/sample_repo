@@ -11,6 +11,7 @@ const ENDPOINTS = {
 };
 
 function getCSRFToken() {
+
     const fromCookie = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='));
     if (fromCookie) {
         return fromCookie.trim().split('=')[1];
@@ -40,6 +41,7 @@ async function apiFetch(url, options = {}) {
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': csrfToken
+
         }
     };
 
@@ -122,7 +124,9 @@ const taskForm = document.getElementById('taskForm');
 const micBtn = document.getElementById('micBtn');
 const voiceToast = document.getElementById('voiceToast');
 const systemAlert = document.getElementById('systemAlert');
+
 const authError = document.getElementById('authError');
+
 
 // Application Startup Initialization
 document.addEventListener('DOMContentLoaded', async () => {
@@ -151,7 +155,9 @@ function checkUserSession() {
 
 // Toggle Auth layout switch between sign-in and registration models
 function toggleAuthMode() {
+
     clearAuthError();
+
     const fullNameGroup = document.getElementById('fullNameGroup');
     const authSubmitBtn = document.getElementById('authSubmitBtn');
     const authToggleText = document.getElementById('authToggleText');
@@ -175,12 +181,15 @@ function toggleAuthMode() {
 // Handle confirmation of log in or user registration submitting form
 async function handleAuthSubmit(event) {
     event.preventDefault();
+
     clearAuthError();
+
 
     const usernameInput = document.getElementById('authUsername').value.trim();
     const passwordInput = document.getElementById('authPassword').value;
     const fallbackName = usernameInput.charAt(0).toUpperCase() + usernameInput.slice(1);
     const fullNameInput = document.getElementById('authFullName').value.trim() || fallbackName;
+
 
     if (!usernameInput) {
         setAuthError('Please enter your username or email.');
@@ -198,6 +207,7 @@ async function handleAuthSubmit(event) {
     try {
         const response = await apiFetch(activeAuthMode === 'signup' ? ENDPOINTS.register : ENDPOINTS.login, {
             method: 'POST',
+
             body: JSON.stringify({
                 username: usernameInput,
                 password: passwordInput,
@@ -208,9 +218,11 @@ async function handleAuthSubmit(event) {
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
+
             const errorMessage = formatApiError(errorBody) || 'Authentication failed. Please check your details.';
             setAuthError(errorMessage);
             showSystemToast(errorMessage);
+
             return;
         }
 
@@ -295,6 +307,7 @@ function handleLogout() {
     closeAllHeaderPopups();
 }
 
+
 function setAuthError(message) {
     if (authError) {
         authError.textContent = message;
@@ -306,6 +319,7 @@ function clearAuthError() {
         authError.textContent = '';
     }
 }
+
 
 function applySessionLogout() {
     // Hide dashboard framework completely and reveal clean Fullscreen Centered Auth page
@@ -340,7 +354,9 @@ async function checkBackendHandshake() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s quick probe
         
+
         const response = await apiFetch(ENDPOINTS.summary, { signal: controller.signal });
+
         clearTimeout(timeoutId);
         
         if (response.ok) {
@@ -363,10 +379,12 @@ async function fetchDashboardData() {
     if (isOnline) {
         try {
             const [summaryRes, todayRes, upcomingRes, allTasksRes] = await Promise.all([
+
                 apiFetch(ENDPOINTS.summary),
                 apiFetch(ENDPOINTS.today),
                 apiFetch(ENDPOINTS.upcoming),
                 apiFetch(ENDPOINTS.tasks)
+
             ]);
 
             if (summaryRes.ok) {
@@ -421,6 +439,7 @@ function fetchDashboardDataOffline() {
 
 // --- UNIFIED FILTER RENDERING ENGINE ---
 function filterAndRenderDashboard(allTodayTasks, allUpcomingTasks) {
+
     const todayStr = getTodayDateString();
     const sourceList = isOnline ? calendarTasksCache : localTasks;
 
@@ -436,11 +455,13 @@ function filterAndRenderDashboard(allTodayTasks, allUpcomingTasks) {
     if (currentFilter === 'overdue') {
         filteredToday = overdueTasks.filter(t => t.status !== 'completed');
         filteredUpcoming = overdueTasks.filter(t => t.status === 'completed');
+
         
         todayLabel = "Overdue Tasks (Incomplete)";
         upcomingLabel = "Overdue Tasks (Completed)";
     } else if (currentFilter !== 'all') {
         if (currentFilter === 'pending') {
+
             filteredToday = [...todayTasks, ...overdueTasks].filter(t => t.status !== 'completed');
             filteredUpcoming = upcomingTasks.filter(t => t.status !== 'completed');
         } else if (currentFilter === 'completed') {
@@ -449,6 +470,7 @@ function filterAndRenderDashboard(allTodayTasks, allUpcomingTasks) {
         } else if (currentFilter === 'high') {
             filteredToday = [...todayTasks, ...overdueTasks].filter(t => t.priority === 'high');
             filteredUpcoming = upcomingTasks.filter(t => t.priority === 'high');
+
         }
     }
 
@@ -542,8 +564,10 @@ async function toggleTaskStatus(taskId, currentStatus) {
     const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';
 
     try {
+
         const response = await apiFetch(`${ENDPOINTS.tasks}${taskId}/`, {
             method: 'PATCH',
+
             body: JSON.stringify({ status: nextStatus })
         });
         if (response.ok) {
@@ -681,8 +705,10 @@ async function handleEditTaskSubmit(event) {
     };
 
     try {
+
         const response = await apiFetch(`${ENDPOINTS.tasks}${taskId}/`, {
             method: 'PATCH',
+
             body: JSON.stringify(payload)
         });
         if (response.ok) {
@@ -734,8 +760,10 @@ async function handleAddTaskSubmit(event) {
     };
 
     try {
+
         const response = await apiFetch(ENDPOINTS.tasks, {
             method: 'POST',
+
             body: JSON.stringify(payload)
         });
         if (response.ok) {
@@ -1391,6 +1419,7 @@ function initVoiceRecognition() {
     function queueVoiceSubmit(delay = 2200) {
         clearTimeout(submitTimer);
         submitTimer = setTimeout(() => {
+
             shouldKeepListening = false;
             processCapturedSpeech(finalTranscript.trim());
             if (isRecognitionRunning) {
@@ -1400,6 +1429,7 @@ function initVoiceRecognition() {
                     console.warn("Speech recognition stop error:", e);
                 }
             }
+
         }, delay);
     }
 
@@ -1407,6 +1437,7 @@ function initVoiceRecognition() {
         if (micBtn.classList.contains('listening')) {
             shouldKeepListening = false;
             processCapturedSpeech(finalTranscript.trim());
+
             if (isRecognitionRunning) {
                 try {
                     recognition.stop();
@@ -1414,6 +1445,7 @@ function initVoiceRecognition() {
                     console.warn("Speech recognition stop error:", e);
                 }
             }
+
         } else {
             finalTranscript = '';
             shouldKeepListening = true;
@@ -1476,18 +1508,22 @@ async function processCapturedSpeech(phrase) {
     showSystemToast(`Heard: "${phrase}"`);
 
     try {
+
         const response = await apiFetch(ENDPOINTS.voice, {
             method: 'POST',
+
             body: JSON.stringify({ transcript: phrase })
         });
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
+
             const errorText = formatApiError(errorBody);
             const authMessage = (response.status === 401 || response.status === 403)
                 ? ' Please sign in before using voice commands.'
                 : '';
             showSystemToast(`Voice task failed: ${errorText}.${authMessage}`);
+
             return;
         }
 
@@ -1583,12 +1619,14 @@ function escapeHTML(str) {
 }
 
 function formatApiError(errorBody) {
+
     if (!errorBody || typeof errorBody !== 'object') {
         return 'Request failed. Check the browser console.';
     }
     if (errorBody.detail) {
         return errorBody.detail;
     }
+
     if (errorBody.error) {
         return errorBody.error;
     }

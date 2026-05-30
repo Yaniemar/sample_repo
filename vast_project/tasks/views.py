@@ -75,7 +75,9 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+
         parsed = self._parse_voice_command(transcript)
+c
 
         serializer = self.get_serializer(data=parsed)
         serializer.is_valid(raise_exception=True)
@@ -101,16 +103,19 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         time_str = '09:00'
         time_pattern = [
+
             r'\bat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b',
             r'\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b',
             r'\bat\s+(\d{1,2})(?::(\d{2}))?\b',
             r'\b(\d{1,2}):(\d{2})\b',
+
         ]
         for pattern in time_pattern:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 groups = match.groups()
                 hour = int(groups[0])
+
                 minute = int(groups[1]) if groups[1] and groups[1].isdigit() else 0
                 ampm = groups[2].lower() if len(groups) > 2 and groups[2] else None
                 if ampm:
@@ -118,13 +123,16 @@ class TaskViewSet(viewsets.ModelViewSet):
                         hour += 12
                     elif ampm == 'am' and hour == 12:
                         hour = 0
+
                 time_str = f'{hour:02d}:{minute:02d}'
                 text = text[:match.start()] + text[match.end():]
                 break
         
         task_date = now.date()
+
         if 'tomorrow' in text:
             task_date = now.date() + timedelta(days=1)
+
             text = text.replace('tomorrow', '').strip()
         elif 'today' in text:
             text = text.replace('today', '').strip()
@@ -143,8 +151,10 @@ class TaskViewSet(viewsets.ModelViewSet):
                 except (ValueError, OverflowError):
                     pass
         
+
         # Remove filter words and any remaining time/date helper tokens
         title = re.sub(r'\b(add|create|schedule|set|remind|me|to|a|an|the|at|on|today|tomorrow|am|pm)\b', '', text)
+
         title = re.sub(r'\s+', ' ', title).strip()
         title = title.capitalize() if title else 'Untitled Task'
 

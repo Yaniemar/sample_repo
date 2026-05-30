@@ -5,9 +5,11 @@ from django.utils import timezone
 # Create your models here.
 class Task(models.Model):
     PRIORITY_CHOICES = [
+
         ('low', 'Low'),
         ('medium', 'Medium'),
         ('high', 'High'),
+
     ]
     STATUS_CHOICES = [
         ('pending', 'Pending'),
