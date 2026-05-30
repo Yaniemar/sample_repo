@@ -1,0 +1,494 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>VAST - Voice-Assisted Scheduling & Tasks</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+    <body>
+        <!-- Add CSRF token for API calls -->
+        {% csrf_token %}
+        
+        <!-- CONNECTIVITY HANDSHAKE STATE BANNER -->
+        <div class="network-banner" id="networkBanner">
+            <div class="network-dot"></div>
+            <span id="networkText">Checking connectivity pipeline...</span>
+        </div>
+
+        <!-- 1. AUTH SCREEN VIEW (PAGE WRAPPER) -->
+        <div id="auth-page-wrapper">
+            <div class="auth-container">
+                <div class="auth-logo">
+                    <svg viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="14" stroke="#1A4D4A" stroke-width="2.5" fill="none"/>
+                        <path d="M16 7 L16 16 L22 19" stroke="#1A4D4A" stroke-width="2.5"/>
+                        <path d="M10 24 L16 12 L22 24" stroke="#338A85" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                    <h1>V.A.S.T.</h1>
+                    <p>Voice-Assisted Scheduling & Tasks</p>
+                </div>
+                
+                <form id="authForm" onsubmit="handleAuthSubmit(event)">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <div class="auth-form-group" id="fullNameGroup" style="display: none;">
+                        <label for="authFullName">Full Name</label>
+                        <input type="text" id="authFullName" class="auth-input" placeholder="Enter your full name">
+                    </div>
+                    <div class="auth-form-group">
+                        <label for="authUsername">Username or Email</label>
+                        <input type="text" id="authUsername" class="auth-input" placeholder="Enter your username or email" required>
+                    </div>
+                    <div class="auth-form-group">
+                        <label for="authPassword">Password</label>
+                        <input type="password" id="authPassword" class="auth-input" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="auth-btn" id="authSubmitBtn">Confirm Log In</button>
+                    <div class="auth-error" id="authError" role="alert" aria-live="polite"></div>
+                </form>
+
+                <div class="auth-toggle">
+                    <span id="authToggleText">Don't have an account yet?</span>
+                    <a id="toggleAuthMode" onclick="toggleAuthMode()">Create an Account</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. MAIN APP CONTENT WRAPPER -->
+        <div id="app-content-wrapper" style="display: none;">
+            <!-- MAIN APP HEADER -->
+            <header id="mainHeader">
+                <div class="logo-group" onclick="navigateTo('dashboard')">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="14" stroke="white" stroke-width="2.5" fill="none"/>
+                        <path d="M16 7 L16 16 L22 19" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M10 24 L16 12 L22 24" stroke="#FFF9C4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <div>
+                        <h1>V.A.S.T.</h1>
+                        <div class="brand-subtitle">Voice-Assisted Tasks</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn add-manual-btn" id="openModalBtn" title="Add Task Manually">+</button>
+                    <button class="icon-btn" id="bellBtn" title="Notifications">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <div class="badge-dot" id="notifBadge"></div>
+                    </button>
+                    <button class="icon-btn" id="profileBtn" title="Profile">
+                        <div class="profile-popover-avatar" id="headerProfileAvatar" style="width: 24px; height: 24px; font-size: 11px;">J</div>
+                    </button>
+
+                    <!-- NOTIFICATION OVERLAY (Notification_Popup V2.png) -->
+                    <div class="header-dropdown" id="notifDropdown">
+                        <div class="dropdown-title">
+                            <span>Notifications</span>
+                            <button class="clear-notif-btn" onclick="clearNotifications()">Clear All</button>
+                        </div>
+                        <div class="notif-list" id="notifList"></div>
+                    </div>
+
+                    <!-- PROFILE OVERLAY (Profile_Popup.png) -->
+                    <div class="header-dropdown" id="profileDropdown">
+                        <div class="profile-popover-info">
+                            <div class="profile-popover-avatar" id="avatarLetter">J</div>
+                            <div class="profile-popover-meta">
+                                <h4 id="profileName">Jei Mii</h4>
+                                <p id="profileUserType">VAST Premium Member</p>
+                            </div>
+                        </div>
+                        <div class="profile-menu-item" onclick="navigateTo('settings')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            <span>Account Settings</span>
+                        </div>
+                        <div class="profile-menu-item logout" onclick="handleLogout()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>
+                            <span>Logout</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- SYSTEM ALERTS TOAST -->
+            <div class="system-alert" id="systemAlert">Task Alert</div>
+
+            <main>
+                <!-- 2. HOME / DASHBOARD PANEL -->
+                <section class="view-panel" id="dashboard-panel">
+                    <section class="overview-section">
+                        <h2>Overview</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card pendings" onclick="filterDashboardTasks('pending')" title="Show pending tasks">
+                                <div class="stat-info"><div class="stat-number" id="count-pending">0</div><div class="stat-label">In Progress</div></div>
+                                <div class="stat-icon"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
+                            </div>
+                            <div class="stat-card completed" onclick="filterDashboardTasks('completed')" title="Show completed tasks">
+                                <div class="stat-info"><div class="stat-number" id="count-completed">0</div><div class="stat-label">Completed</div></div>
+                                <div class="stat-icon"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+                            </div>
+                            <div class="stat-card priority" onclick="filterDashboardTasks('high')" title="Show urgent tasks">
+                                <div class="stat-info"><div class="stat-number" id="count-priority">0</div><div class="stat-label">Priority</div></div>
+                                <div class="stat-icon"><svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/></svg></div>
+                            </div>
+                            <div class="stat-card overdue" onclick="filterDashboardTasks('overdue')" title="Show overdue tasks">
+                                <div class="stat-info"><div class="stat-number" id="count-overdue">0</div><div class="stat-label">Overdue</div></div>
+                                <div class="stat-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="tasks-layout">
+                        <div>
+                            <h2><span id="todayHeaderLabel">Today's Tasks</span> <span style="font-size:12px; font-weight:normal;" id="filterTextToday"></span></h2>
+                            <div class="tasks-container">
+                                <div class="task-list" id="today-tasks-list"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h2><span id="upcomingHeaderLabel">Upcoming Tasks</span> <span style="font-size:12px; font-weight:normal;" id="filterTextUpcoming"></span></h2>
+                            <div class="tasks-container">
+                                <div class="task-list" id="upcoming-tasks-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. CALENDAR SYSTEM VIEW -->
+                <section class="view-panel" id="calendar-panel">
+                    <div class="calendar-grid-layout">
+                        <div class="calendar-left">
+                            <div class="calendar-header">
+                                <div class="calendar-month-nav">
+                                    <button class="cal-arrow" onclick="changeMonth(-1)">‹</button>
+                                    <span class="calendar-month-label" id="calendarMonthLabel">May 2026</span>
+                                    <button class="cal-arrow" onclick="changeMonth(1)">›</button>
+                                </div>
+                            </div>
+                            
+                            <div class="days-grid" id="calendarGrid"></div>
+                        </div>
+
+                        <div class="calendar-right">
+                            <div class="focused-date-header" id="focusedDateLabel">Sun, May 17</div>
+                            <div class="calendar-tasks-view" id="calendarDayTaskList"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. ACCOUNT SETTINGS VIEW -->
+                <section class="view-panel" id="settings-panel">
+                    <div class="settings-layout">
+                        
+                        <!-- Left Sidebar (Matching Profile Details layouts) -->
+                        <aside class="settings-sidebar">
+                            <div class="settings-sidebar-profile">
+                                <div class="settings-sidebar-avatar" id="settingsSidebarAvatarLetter">J</div>
+                                <h3 class="settings-sidebar-name" id="settingsSidebarName">Jei Mii <span>✎</span></h3>
+                            </div>
+                            <nav class="settings-nav">
+                                <div class="settings-nav-item active" onclick="switchSettingsTab('profile')">
+                                    <span>Profiles and personal details</span>
+                                    <span>›</span>
+                                </div>
+                                <div class="settings-nav-item" onclick="switchSettingsTab('password')">
+                                    <span>Password and email</span>
+                                    <span>›</span>
+                                </div>
+                                <div class="settings-nav-item" onclick="switchSettingsTab('language')">
+                                    <span>Language & Region</span>
+                                    <span>›</span>
+                                </div>
+                            </nav>
+                        </aside>
+
+                        <!-- Right Cards Area -->
+                        <div class="settings-content">
+                            
+                            <!-- TAB 1: Profile and Personal Details (Profile&PersonalDetails.png) -->
+                            <div class="settings-content-pane active" id="settings-pane-profile">
+                                <div class="settings-card">
+                                    <h3>Profile Picture</h3>
+                                    <div class="profile-pic-box" id="settingsPicBox" onclick="openUploadPhotoModal()">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#617D8A" stroke-width="2">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                    </div>
+                                    <button class="auth-btn" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto; display: block;" onclick="openUploadPhotoModal()">Upload photo</button>
+                                </div>
+                                
+                                <div class="settings-card">
+                                    <h3>Name</h3>
+                                    <div class="auth-form-group">
+                                        <label>First Name</label>
+                                        <input type="text" id="settingsFirstName" class="auth-input">
+                                    </div>
+                                    <div class="auth-form-group">
+                                        <label>Last Name</label>
+                                        <input type="text" id="settingsLastName" class="auth-input">
+                                    </div>
+                                    <button class="auth-btn" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto; display: block;" onclick="savePersonalDetails()">Save changes</button>
+                                </div>
+                            </div>
+
+                            <!-- TAB 2: Password and Email (Password and Email.png) -->
+                            <div class="settings-content-pane" id="settings-pane-password">
+                                <div class="settings-card">
+                                    <h3>Email</h3>
+                                    <div class="auth-form-group">
+                                        <label>Current email</label>
+                                        <input type="email" id="settingsEmail" class="auth-input" readonly style="opacity:0.75; cursor:not-allowed;">
+                                    </div>
+                                    <div id="additionalEmailsContainer"></div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                                        <a style="font-size: 13px; font-weight:600; color:var(--accent-teal); cursor:pointer;" onclick="openAddEmailModal()">Add Account</a>
+                                        <a style="font-size: 13px; font-weight:600; color:#B91C1C; cursor:pointer;" onclick="deleteEmailAccount()">Delete Account</a>
+                                    </div>
+                                </div>
+
+                                <div class="settings-card">
+                                    <h3>Password</h3>
+                                    <div class="auth-form-group">
+                                        <label>Current password</label>
+                                        <input type="password" id="settingsCurrentPassword" class="auth-input" placeholder="••••••••">
+                                    </div>
+                                    <div class="auth-form-group">
+                                        <label>New password</label>
+                                        <input type="password" id="settingsNewPassword" class="auth-input" placeholder="••••••••">
+                                    </div>
+                                    <div class="auth-form-group">
+                                        <label>Re-type new password</label>
+                                        <input type="password" id="settingsRetypePassword" class="auth-input" placeholder="••••••••">
+                                    </div>
+                                    <button class="auth-btn" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto; display: block;" onclick="saveNewPassword()">Change password</button>
+                                </div>
+                            </div>
+
+                            <!-- TAB 3: Language & Region (Language and region.png) -->
+                            <div class="settings-content-pane" id="settings-pane-language">
+                                <div class="settings-card">
+                                    <h3>App language</h3>
+                                    <div style="border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="openLanguageModal()">
+                                        <div>
+                                            <h4 style="font-size: 14px; font-weight: 600; color: var(--text-main);">Account language</h4>
+                                            <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;" id="settingsActiveLangDesc">English(US)</p>
+                                        </div>
+                                        <span style="font-size: 20px; color: var(--text-muted); margin-left: 12px;">›</span>
+                                    </div>
+                                </div>
+
+                                <div class="settings-card">
+                                    <h3>Region and format</h3>
+                                    <div style="border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="openRegionModal()">
+                                        <div>
+                                            <h4 style="font-size: 14px; font-weight: 600; color: var(--text-main);">Date and time</h4>
+                                            <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;" id="settingsActiveRegionDesc">Philippines (English)</p>
+                                        </div>
+                                        <span style="font-size: 20px; color: var(--text-muted); margin-left: 12px;">›</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </section>
+            </main>
+
+            <!-- NOTCHED BOTTOM NAV BAR -->
+            <div class="bottom-nav-container" id="bottomNavShell">
+                <div class="mic-button-wrapper">
+                    <button class="mic-btn" id="micBtn" title="Speak to V.A.S.T.">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </button>
+                </div>
+                <nav class="nav-bar-bg">
+                    <a class="nav-item active" id="navHome" onclick="navigateTo('dashboard')">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
+                        Dashboard
+                    </a>
+                    <div style="width: 80px;"></div>
+                    <a class="nav-item" id="navCalendar" onclick="navigateTo('calendar')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        Calendar
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- MANUAL ADD TASK MODAL -->
+        <div class="modal-overlay" id="taskModal">
+            <div class="modal-card">
+                <button class="modal-close" id="closeModalBtn">&times;</button>
+                <h3>Add Task</h3>
+                <form id="taskForm" onsubmit="handleAddTaskSubmit(event)">
+                    <div class="form-group">
+                        <input type="text" id="taskTitle" placeholder="Add Title" required>
+                    </div>
+                    <div class="form-group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <input type="date" id="taskDate" required>
+                    </div>
+                    <div class="form-group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <input type="time" id="taskTime" required>
+                    </div>
+                    <div class="form-group">
+                        <select id="taskPriority">
+                            <option value="low">Low Priority</option>
+                            <option value="medium" selected>Medium Priority</option>
+                            <option value="high">High Priority</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="save-btn">Save</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- EDIT TASK MODAL -->
+        <div class="modal-overlay" id="editTaskModal">
+            <div class="modal-card">
+                <button class="modal-close" onclick="closeEditTaskModal()">&times;</button>
+                <h3>Edit Task</h3>
+                <form id="editTaskForm" onsubmit="handleEditTaskSubmit(event)">
+                    <input type="hidden" id="editTaskId">
+                    <div class="form-group">
+                        <input type="text" id="editTaskTitle" placeholder="Task Title" required>
+                    </div>
+                    <div class="form-group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <input type="date" id="editTaskDate" required>
+                    </div>
+                    <div class="form-group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <input type="time" id="editTaskTime" required>
+                    </div>
+                    <div class="form-group">
+                        <select id="editTaskPriority">
+                            <option value="low">Low Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="high">High Priority</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select id="editTaskStatus">
+                            <option value="pending">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="save-btn">Save Changes</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- DELETE CONFIRMATION MODAL -->
+        <div class="modal-overlay" id="deleteConfirmModal">
+            <div class="modal-card" style="max-width: 400px; text-align: center;">
+                <button class="modal-close" onclick="closeDeleteConfirmModal()">&times;</button>
+                <div style="margin-bottom: 16px;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#E5A9A9" stroke-width="2" style="margin: 0 auto;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <h3 style="margin-bottom: 12px; font-size: 18px;">Delete Task</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Are you sure you want to delete this task? This action cannot be undone.</p>
+                <div style="display: flex; gap: 12px;">
+                    <button class="auth-btn" style="background-color: #E2E8F0; color: var(--text-main); margin-top:0;" onclick="closeDeleteConfirmModal()">Cancel</button>
+                    <button class="auth-btn" style="background-color: #E5A9A9; color: white; margin-top:0;" id="confirmDeleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VOICE RECOGNITION POPUP / TOAST -->
+        <div class="voice-toast" id="voiceToast">Listening... Speak now.</div>
+
+        <!-- HIGH-FIDELITY MODAL: UPLOAD PHOTO / PREVIEW (Upload photo.png) -->
+        <div class="modal-overlay" id="uploadPhotoModal">
+            <div class="modal-card" style="text-align: center;">
+                <button class="modal-close" onclick="closeUploadPhotoModal()">&times;</button>
+                <h3>Preview</h3>
+                <div id="avatarCirclePreview" style="width: 140px; height: 140px; border-radius: 50%; background-color: #E2E8F0; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 600; color: var(--accent-teal); margin: 0 auto 16px; background-size: cover; background-position: center;">J</div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Choose a profile color preset below, or select a file:</p>
+                <input type="file" id="photoFileInput" style="display: none;" onchange="handlePhotoFileSelected(event)">
+                <button class="auth-btn" style="width: auto; padding: 10px 20px; font-size: 13px; margin-bottom: 16px; background-color: var(--text-muted);" onclick="document.getElementById('photoFileInput').click()">Browse Device File</button>
+                
+                <div class="avatar-presets-grid">
+                    <div class="avatar-preset-btn" style="background-color: #A3D9C9;" onclick="selectAvatarPreset('#A3D9C9', '')"></div>
+                    <div class="avatar-preset-btn" style="background-color: #F0E4B1;" onclick="selectAvatarPreset('#F0E4B1', '')"></div>
+                    <div class="avatar-preset-btn" style="background-color: #F5CDA7;" onclick="selectAvatarPreset('#F5CDA7', '')"></div>
+                    <div class="avatar-preset-btn" style="background-color: #E5A9A9;" onclick="selectAvatarPreset('#E5A9A9', '')"></div>
+                    <div class="avatar-preset-btn" style="background-color: #E0F2F1;" onclick="selectAvatarPreset('#E0F2F1', '')"></div>
+                    <div class="avatar-preset-btn" style="background-color: #D1ECE7;" onclick="selectAvatarPreset('#D1ECE7', '')"></div>
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button class="auth-btn" style="background-color: #E2E8F0; color: var(--text-main);" onclick="closeUploadPhotoModal()">Cancel</button>
+                    <button class="auth-btn" onclick="saveUploadPhoto()">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- HIGH-FIDELITY MODAL: ADD EMAIL ACCOUNT (Add email account.png) -->
+        <div class="modal-overlay" id="addEmailModal">
+            <div class="modal-card">
+                <button class="modal-close" onclick="closeAddEmailModal()">&times;</button>
+                <h3>Add email account</h3>
+                <form onsubmit="handleAddEmailSubmit(event)">
+                    <div class="form-group">
+                        <input type="email" id="modalAddEmail" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="modalAddPassword" placeholder="Password" required>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                        <button type="button" class="auth-btn" style="background-color: #E2E8F0; color: var(--text-main);" onclick="closeAddEmailModal()">Cancel</button>
+                        <button type="submit" class="auth-btn">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- HIGH-FIDELITY MODAL: ACCOUNT LANGUAGE (Select language.png) -->
+        <div class="modal-overlay" id="languageModal">
+            <div class="modal-card">
+                <button class="modal-close" onclick="closeLanguageModal()">&times;</button>
+                <h3>Account language</h3>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="langSearchInput" placeholder="Search languages" oninput="filterLanguages()">
+                </div>
+                <p style="font-weight: 700; font-size: 13px; margin: 12px 0 6px;">All languages</p>
+                <div class="popup-list" id="languageListContainer">
+                    <!-- Loaded dynamically below -->
+                </div>
+            </div>
+        </div>
+
+        <!-- HIGH-FIDELITY MODAL: REGION AND FORMAT (Region and format.png) -->
+        <div class="modal-overlay" id="regionModal">
+            <div class="modal-card">
+                <button class="modal-close" onclick="closeRegionModal()">&times;</button>
+                <h3>Date and time</h3>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="regionSearchInput" placeholder="Search regions" oninput="filterRegions()">
+                </div>
+                <p style="font-weight: 700; font-size: 13px; margin: 12px 0 6px;">All regions</p>
+                <div class="popup-list" id="regionListContainer">
+                    <!-- Loaded dynamically below -->
+                </div>
+            </div>
+        </div>
+        
+        <script src="{% static 'js/app.js' %}"></script>
+    </body>
+</html>
